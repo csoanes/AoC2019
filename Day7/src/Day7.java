@@ -11,7 +11,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class Day7 {
     public static void main(String[] args) {
-        File input = new File("/Users/tiff/AoC/AoC2019/Day7/ampcontroller.txt");
+        File input = new File("C:\\Users\\tiff\\IdeaProjects\\AoC2019\\Day7\\ampcontroller.txt");
         try {
             BufferedReader reader = new BufferedReader(new FileReader(input));
             String baseString = reader.readLine();
