@@ -1,212 +1,270 @@
+import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Scanner;
+import java.util.Arrays;
+
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 class IntcodeComputer implements Runnable {
 
-    private int[] instructions;
+    private BigDecimal[] instructions;
     private int index;
-    private int offset
-    private Scanner reader;
-    private final BlockingQueue<Integer> inputQueue;
-    private final BlockingQueue<Integer> outputQueue;
+    private int relativeBase = 0;
+
+    private int[] commandModes = new int[]{0, 0, 0};
+    private final BlockingQueue<BigDecimal> inputQueue;
+    private final BlockingQueue<BigDecimal> outputQueue;
 
 
-    public IntcodeComputer(int[] instructions, BlockingQueue<Integer> inputQueue, BlockingQueue<Integer> outputQueue) {
-        this.instructions= new int[1000];
-        for (int i=0; i < 1000; i++) {
-            if (i < instructions.length) {
-                this.instructions[i] = instructions[i];
-            } else {
-                this.instructions[i] = 0;
-            }
+    public IntcodeComputer(int[] instructionsIn, BlockingQueue<BigDecimal> inputQueue, BlockingQueue<BigDecimal> outputQueue) {
+        instructions = new BigDecimal[10000];
+        Arrays.fill(instructions, BigDecimal.ZERO);
+        for (int i = 0; i < instructionsIn.length; i++) {
+            this.instructions[i] = new BigDecimal(instructionsIn[i]);
         }
         this.index = 0;
-        this.reader = new Scanner(System.in);
-        this.inputQueue=inputQueue;
-        this.outputQueue=outputQueue;
+
+        this.inputQueue = inputQueue;
+        this.outputQueue = outputQueue;
+
     }
 
     @Override
-    public void run(){
+    public void run() {
         //System.out.println(Thread.currentThread().getName()+" Input Queue"+ inputQueue.toString());
         String command;
-        while(true){
-            command = String.valueOf(this.instructions[this.index]);
-            System.out.println(Thread.currentThread().getName()+" Command: " + command);
-            if (command.endsWith("99")){
-                System.out.println( Thread.currentThread().getName() + " Exited because of input 99");
-                break;
-            } else if (command.endsWith("1")){
-                instruction1(command);
-            } else if (command.endsWith("2")){
-                instruction2(command);
-            } else if (command.endsWith("3")){
-                instruction3(command);
-            } else if (command.endsWith("4")) {
-                instruction4(command);
-            } else if (command.endsWith("5")){
-                instruction5(command);
-            } else if (command.endsWith("6")) {
-                instruction6(command);
-            } else if (command.endsWith("7")){
-                instruction7(command);
-            } else if (command.endsWith("8")) {
-                instruction8(command);
-            } else if (command.endsWith("9")) {
-                instruction9(command);
-            } else {
+        boolean finished = false;
+        while (!finished) {
+
+            command = String.valueOf(this.instructions[this.index++]);
+
+            int currentCommand = setCommand(command);
+            System.out.println(Thread.currentThread().getName() + " Command: " + currentCommand);
+
+            switch (currentCommand) {
+                case 99:
+                    System.out.println(Thread.currentThread().getName() + " Exited because of input 99");
+                    finished = true;
+                    break;
+                case 1:
+                    instruction1();
+                    break;
+                case 2:
+                    instruction2();
+                    break;
+                case 3:
+                    instruction3();
+                    break;
+                case 4:
+                    instruction4();
+                    break;
+                case 5:
+                    instruction5();
+                    break;
+                case 6:
+                    instruction6();
+                    break;
+                case 7:
+                    instruction7();
+                    break;
+                case 8:
+                    instruction8();
+                    break;
+                case 9:
+                    instruction9();
+                    break;
+                default:
                     System.out.println("Invalid input, terminating");
                     System.out.println("Index is " + this.index);
                     System.out.println("Value is " + command);
+                    finished = true;
                     break;
-                }
             }
         }
     }
-    private ArrayList<String> populateParameters(String command){
-        ArrayList<String> parameters = new ArrayList<>();
-        int length;
-        for (int i = command.length() - 3; i >= 0; i--){
-            parameters.add(String.valueOf(command.charAt(i)));
-        }
-        length = parameters.size();
-        for (int i = 2; i > length; i--){
-            parameters.add("0");
-        }
-        this.index++; // Index is now not on a value
-        return parameters;
+
+    private void instruction1() {
+
+        BigDecimal number = readMemory(commandModes[0], instructions[this.index++]);
+        BigDecimal sum = readMemory(commandModes[1], instructions[this.index++]);
+        BigDecimal pos = readMemory(1, instructions[this.index++]);
+        sum = sum.add(number);
+        this.instructions[pos.intValue()] = sum;
+        System.out.print("Running, thread: " + Thread.currentThread().getName());
+        System.out.println(" Writing " + sum + " to position " + pos);
     }
 
-    private ArrayList<Integer> populateValues(ArrayList<String> parameters){
-        ArrayList<Integer> values = new ArrayList<>(parameters.size());
-        for (String parameter : parameters) {
-            if (parameter.equals("0")) {
-                values.add(this.instructions[this.instructions[this.index]]);
-            } else if (parameter.equals("1")) {
-                values.add(this.instructions[this.index]);
-            } else if (parameter.equals("2")) {
-                values.add(this.instructions[offset+this.instructions[this.index]]);
-            }
-            this.index++;
-        }
-        return values;
+    private void instruction2() {
+
+        BigDecimal number = readMemory(commandModes[0], instructions[this.index++]);
+        BigDecimal mult = readMemory(commandModes[1], instructions[this.index++]);
+        BigDecimal pos = readMemory(1, instructions[this.index++]);
+        mult = mult.multiply(number);
+        this.instructions[pos.intValue()] = mult;
+        System.out.print("Running, thread: " + Thread.currentThread().getName());
+        System.out.println(" Writing " + mult + " to position " + pos);
     }
 
-    private void instruction1(String command){
-        ArrayList<String> parameters = populateParameters(command);
-        ArrayList<Integer> values = populateValues(parameters);
-        int pos = this.instructions[this.index];
-        int sum = 0;
-        for (int number : values){
-            sum += number;
-        }
-        this.instructions[pos] = sum;
-//        System.out.print("Running, thread: " + Thread.currentThread().getName());
-//        System.out.println(" Writing " + sum + " to position " + pos);
-        this.index++; //Index is now on next instruction
-    }
-    private void instruction2(String command){
-        ArrayList<String> parameters = populateParameters(command);
-        ArrayList<Integer> values = populateValues(parameters);
-        int pos = this.instructions[this.index];
-        int sum = 1;
-        for (int number : values){
-            sum *= number;
-        }
-        this.instructions[pos] = sum;
-//        System.out.print("Running, thread: " + Thread.currentThread().getName());
-//        System.out.println(" Writing " + sum + " to position " + pos);
-        this.index++;
-    }
-    private void instruction3(String command){
-        Integer input=99;
-        ArrayList<String> parameters = populateParameters(command);
-        System.out.println( Thread.currentThread().getName() + " Input Queue" +  inputQueue.toString());
+    private void instruction3() {
+        BigDecimal input = BigDecimal.ZERO;
+        System.out.println(Thread.currentThread().getName() + " Input Queue" + inputQueue.toString());
         try {
-            input=inputQueue.take();
+            input = inputQueue.take();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        this.index++;
-        int pos=0;
-        if (parameters.get(0)=="0") {
-            pos = this.instructions[this.index];
-        } else if (parameters.get(0) == "2") {
-            pos = this.instructions[this.index] + offset;
-        }
-        this.instructions[pos] = input;
-        System.out.println(Thread.currentThread().getName()+" Got input from queue: " + input);
-        this.index++;
+
+        BigDecimal pos = readMemory(1, instructions[this.index++]);
+        this.instructions[pos.intValue()] = input;
+        System.out.println(Thread.currentThread().getName() + " Got input from queue: " + input);
     }
-    private void instruction4(String command){
-        ArrayList<String> parameters = populateParameters(command);
-        int output;
-        if (parameters.get(0).equals("0")){
-            output = this.instructions[this.instructions[this.index]];
-        } else if (parameters.get(0).equals("2")) {
-            output = this.instructions[this.index + offset];
-        } else {
-            output = this.instructions[this.index];
-        }
-//        System.out.print("Running, thread: " + Thread.currentThread().getName());
-//        System.out.println(" index is " + this.index);
-        System.out.println(Thread.currentThread().getName()+" Output is: " + output);
+
+    private void instruction4() {
+
+        BigDecimal output = readMemory(commandModes[0], instructions[this.index++]);
+        System.out.println(Thread.currentThread().getName()+" index is " + this.index);
+        System.out.println(Thread.currentThread().getName() + " Output is: " + output);
         this.outputQueue.add(output);
-        this.index++;
-    }
-    private void instruction5(String command){
-        ArrayList<String> parameters = populateParameters(command);
-        ArrayList<Integer> values = populateValues(parameters);
-        if (values.get(0) != 0){
-            this.index = values.get(1);
-        }
-    }
-    private void instruction6(String command){
-        ArrayList<String> parameters = populateParameters(command);
-        ArrayList<Integer> values = populateValues(parameters);
-        if (values.get(0) == 0){
-            this.index = values.get(1);
-        }
-    }
-    private void instruction7(String command){
-        ArrayList<String> parameters = populateParameters(command);
-        ArrayList<Integer> values = populateValues(parameters);
-        int pos = this.instructions[this.index];
-        int value = 0;
-        if (values.get(0) < values.get(1)){
-            value = 1;
-        }
-        this.instructions[pos] = value;
-//        System.out.print("Running, thread: " + Thread.currentThread().getName());
-//        System.out.println(" Writing " + value + " to position " + pos);
-        this.index++;
-    }
-    private void instruction8(String command){
-        ArrayList<String> parameters = populateParameters(command);
-        ArrayList<Integer> values = populateValues(parameters);
-        int pos = this.instructions[this.index];
-        int value = 0;
-        if (values.get(0).equals(values.get(1))){
-            value = 1;
-        }
-        this.instructions[pos] = value;
-//        System.out.print("Running, thread: " + Thread.currentThread().getName());
-//        System.out.println(" Writing " + value + " to position " + pos);
-        this.index++;
     }
 
-    private void instruction9(String command) {
-        ArrayList<String> parameters = populateParameters(command);
+    private void instruction5() {
 
+        BigDecimal operand = readMemory(commandModes[0], instructions[this.index++]);
+        BigDecimal target = readMemory(commandModes[1], instructions[this.index++]);
+        if (operand.equals(BigDecimal.ZERO)) {
+            this.index = target.intValue();
+        }
     }
 
-    public int getExitCode(){
-        return this.instructions[0];
+    private void instruction6() {
+
+        BigDecimal operand = readMemory(commandModes[0], instructions[this.index++]);
+        BigDecimal target = readMemory(commandModes[1], instructions[this.index++]);
+        if (operand.equals(BigDecimal.ZERO)) {
+            this.index = target.intValue();
+        }
     }
-    public void printInstructions(){
-        for (int i = 0; i < this.index; i++){
+
+    private void instruction7() {
+
+        BigDecimal param1 = readMemory(commandModes[0], instructions[this.index++]);
+        BigDecimal param2 = readMemory(commandModes[1], instructions[this.index++]);
+        BigDecimal pos = readMemory(1, instructions[this.index++]);
+        BigDecimal value = BigDecimal.ZERO;
+        if (param1.compareTo(param2) <= 0) {
+            value = BigDecimal.ONE;
+        }
+        this.instructions[pos.intValue()] = value;
+        System.out.print("Running, thread: " + Thread.currentThread().getName());
+        System.out.println(" Writing " + value + " to position " + pos);
+    }
+
+    private void instruction8() {
+
+        BigDecimal param1 = readMemory(commandModes[0], instructions[this.index++]);
+        BigDecimal param2 = readMemory(commandModes[1], instructions[this.index++]);
+        BigDecimal pos = readMemory(1, instructions[this.index++]);
+        BigDecimal value = BigDecimal.ZERO;
+        if (param1.compareTo(param2) == 0) {
+            value = BigDecimal.ONE;
+        }
+        this.instructions[pos.intValue()] = value;
+        System.out.print(Thread.currentThread().getName()+ " Writing " + value + " to position " + pos);
+    }
+
+    private void instruction9() {
+
+        BigDecimal param1 = readMemory(commandModes[0], instructions[this.index++]);
+        this.relativeBase += param1.intValue();
+        System.out.print("Running, thread: " + Thread.currentThread().getName());
+        System.out.println(" Writing " + param1 + " to relativeBase ");
+    }
+
+    // reads memory address provided by the argument or write to depending on mode and argument
+    public BigDecimal readMemory(int mode, BigDecimal argument) {
+        switch (mode) {
+            case 0:  // position mode - argument is an absolute address
+                return this.instructions[argument.intValue()];
+
+            case 1: // immediate mode - return argument as value
+                return argument;
+
+            case 2: // offset mode - return the value at address relative base, offset by parameter
+                return this.instructions[relativeBase + argument.intValue()];
+
+            default:
+                System.out.println("Error invalid memory mode");
+                break;
+        }
+        return BigDecimal.ZERO;
+    }
+
+    public int setCommand(String command) {
+        // work out the length of the command and select rigthtmost two digits.
+        int cmdLen = command.length();
+        int retVal = 99;
+        switch (cmdLen) {
+            case 1:
+            case 2:
+                retVal = Integer.parseInt(command);
+                break;
+            case 3:
+                retVal = Integer.parseInt(command.substring(1));
+                this.commandModes[0] = Integer.parseInt(command.substring(0, 1));
+                break;
+            case 4:
+                retVal = Integer.parseInt(command.substring(2));
+                this.commandModes[1] = Integer.parseInt((command.substring(0, 1)));
+                this.commandModes[0] = Integer.parseInt((command.substring(1, 2)));
+                break;
+            case 5:
+                retVal = Integer.parseInt(command.substring(3));
+                this.commandModes[2] = Integer.parseInt((command.substring(0, 1)));
+                this.commandModes[1] = Integer.parseInt((command.substring(1, 2)));
+                this.commandModes[0] = Integer.parseInt((command.substring(2, 3)));
+        }
+        System.out.println("ParamModes" + Arrays.toString(commandModes));
+        System.out.println("Command:" + retVal);
+        return retVal;
+    }
+
+
+    public void printInstructions() {
+        for (int i = 0; i < this.index; i++) {
             System.out.println(this.instructions[i]);
+        }
+    }
+
+    // tests:
+    public static void main(String[] args) {
+        int[] testCommands = {1, 02, 103, 1004, 10005, 11006, 11107, 11118};
+        BlockingQueue<BigDecimal> input = new LinkedBlockingQueue<BigDecimal>();
+        BlockingQueue<BigDecimal> output = new LinkedBlockingQueue<BigDecimal>();
+        IntcodeComputer test = new IntcodeComputer(testCommands, input, output);
+        for (int command : testCommands) {
+            test.setCommand(String.valueOf(command));
+        }
+        // test command modes
+        System.out.println(test.readMemory(0, new BigDecimal(7)));
+        System.out.println(test.readMemory(1, new BigDecimal(7)));
+        System.out.println(test.readMemory(2, new BigDecimal(6)));
+        // test that reports itself and exits
+        int[] testCommands2 = {109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99};
+        IntcodeComputer test2 = new IntcodeComputer(testCommands2, input, output);
+        test2.run();
+
+        while (output.size() > 0) {
+            String outputStr = output.remove().toString() + ",";
+            System.out.println("Output: " + outputStr);
+        }
+
+        int [] testCommands3 = {1102,34915192,34915192,7,4,7,99,0};
+        IntcodeComputer test3 = new IntcodeComputer(testCommands3, input, output);
+        test3.run();
+
+        while (output.size() > 0) {
+            String outputStr = output.remove().toString() + ",";
+            System.out.println("Output: " + outputStr);
         }
     }
 }
