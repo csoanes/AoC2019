@@ -10,7 +10,7 @@ import java.util.stream.Stream;
 public class Day3 {
 
     public static void main(String [] args) {
-        String fileName = "/Users/tiff/AoC/AoC2019/Day3/src/realinput.txt";
+        String fileName = " ealinput.txt";
         List<String> lines = new ArrayList<>();
         List<String> modules = new ArrayList<>();
         //read file into stream, try-with-resources
