@@ -96,7 +96,7 @@ class IntcodeComputer implements Runnable {
         System.out.println(Thread.currentThread().getName()+" Add: index is " + this.index);
         BigDecimal number = readMemory(commandModes[0], instructions[this.index++]);
         BigDecimal sum = readMemory(commandModes[1], instructions[this.index++]);
-        BigDecimal pos = readMemory(1, instructions[this.index++]);
+        BigDecimal pos = (commandModes[2]==2)? (instructions[this.index++].add(new BigDecimal(relativeBase))) : instructions[this.index++];
         sum = sum.add(number);
         this.instructions[pos.intValue()] = sum;
         System.out.println(Thread.currentThread().getName()+" Writing " + sum + " to position " + pos);
@@ -107,7 +107,7 @@ class IntcodeComputer implements Runnable {
         System.out.println(Thread.currentThread().getName()+" multiplying index is " + this.index);
         BigDecimal number = readMemory(commandModes[0], instructions[this.index++]);
         BigDecimal mult = readMemory(commandModes[1], instructions[this.index++]);
-        BigDecimal pos = readMemory(1, instructions[this.index++]);
+        BigDecimal pos = (commandModes[2]==2)? (instructions[this.index++].add(new BigDecimal(relativeBase))) : instructions[this.index++];
         mult = mult.multiply(number);
         this.instructions[pos.intValue()] = mult;
         System.out.println(Thread.currentThread().getName()+" Writing " + mult + " to position " + pos);
@@ -123,17 +123,10 @@ class IntcodeComputer implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        BigDecimal pos=null;
-        if (commandModes[0]==2) {
-            pos = instructions[this.index++].add(new BigDecimal(relativeBase));
+        BigDecimal pos = (commandModes[0]==2)? (instructions[this.index++].add(new BigDecimal(relativeBase))) : instructions[this.index++];
 
-        }
-        else {
-            pos = instructions[this.index++];
-
-        }
         this.instructions[pos.intValue()] = input;
-        System.out.println(Thread.currentThread().getName() + " Got input from queue: " + input+", writing to "+pos.intValue());
+        System.out.println(Thread.currentThread().getName() + " Got input from queue: " + input+", writing to "+pos);
     }
 
     private void instruction4() {
@@ -173,7 +166,7 @@ class IntcodeComputer implements Runnable {
         System.out.println(Thread.currentThread().getName()+" less than,  index is " + this.index);
         BigDecimal param1 = readMemory(commandModes[0], instructions[this.index++]);
         BigDecimal param2 = readMemory(commandModes[1], instructions[this.index++]);
-        BigDecimal pos = readMemory(1, instructions[this.index++]);
+        BigDecimal pos = (commandModes[2]==2)? (instructions[this.index++].add(new BigDecimal(relativeBase))) : instructions[this.index++];
         BigDecimal value = BigDecimal.ZERO;
         if (param1.compareTo(param2) ==-1) {
             value = BigDecimal.ONE;
@@ -187,7 +180,7 @@ class IntcodeComputer implements Runnable {
         System.out.println(Thread.currentThread().getName()+" equals, index is " + this.index);
         BigDecimal param1 = readMemory(commandModes[0], instructions[this.index++]);
         BigDecimal param2 = readMemory(commandModes[1], instructions[this.index++]);
-        BigDecimal pos = readMemory(1, instructions[this.index++]);
+        BigDecimal pos = (commandModes[2]==2)? (instructions[this.index++].add(new BigDecimal(relativeBase))) : instructions[this.index++];
         BigDecimal value = BigDecimal.ZERO;
         if (param1.compareTo(param2) == 0) {
             value = BigDecimal.ONE;
@@ -200,27 +193,32 @@ class IntcodeComputer implements Runnable {
         this.printCommand(1);
         System.out.println(Thread.currentThread().getName()+" set offset, relative base is " + this.relativeBase+ " index: "+this.index);
         BigDecimal param1 = readMemory(commandModes[0], instructions[this.index++]);
+        System.out.println("Adding "+ param1 + " to relativebase");
         this.relativeBase += param1.intValue();
         System.out.println(Thread.currentThread().getName()+" Relative base is now:  " + this.relativeBase+ " Index is now" +index);
     }
 
     // reads memory address provided by the argument or write to depending on mode and argument
     public BigDecimal readMemory(int mode, BigDecimal argument) {
+        System.out.println("Reading memory, mode: " + mode + " arg: " +argument);
+        BigDecimal retVal = BigDecimal.ZERO;
         switch (mode) {
             case 0:  // position mode - argument is an absolute address
-                return this.instructions[argument.intValue()];
-
+                retVal=this.instructions[argument.intValue()];
+                break;
             case 1: // immediate mode - return argument as value
-                return argument;
-
+                retVal= argument;
+                break;
             case 2: // offset mode - return the value at address relative base, offset by parameter
-                return this.instructions[relativeBase + argument.intValue()];
-
+                retVal= this.instructions[relativeBase + argument.intValue()];
+                break;
+                
             default:
                 System.out.println("Error invalid memory mode");
                 break;
         }
-        return BigDecimal.ZERO;
+        System.out.println("Returning: " + retVal);
+        return retVal;
     }
 
     public int setCommand(String command) {
@@ -270,9 +268,9 @@ class IntcodeComputer implements Runnable {
             test.setCommand(String.valueOf(command));
         }
         // test command modes
-        System.out.println(test.readMemory(0, new BigDecimal(7)));
-        System.out.println(test.readMemory(1, new BigDecimal(7)));
-        System.out.println(test.readMemory(2, new BigDecimal(6)));
+        System.out.println(test.readMemory(0, new BigDecimal(7)).equals(new BigDecimal(11118))?"Pass":"Fail");
+        System.out.println(test.readMemory(1, new BigDecimal(7)).equals(new BigDecimal(7))?"Pass":"Fail");
+        System.out.println(test.readMemory(2, new BigDecimal(6)).equals(new BigDecimal(11107))?"Pass":"Fail");
         // test that reports itself and exits
         long[] testCommands2 = {109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99};
         IntcodeComputer test2 = new IntcodeComputer(testCommands2, input, output);

@@ -24,7 +24,7 @@ public class Day9 {
                 .toArray();
         BlockingQueue<BigDecimal> inputQueue = new LinkedBlockingQueue<BigDecimal>();
         BlockingQueue<BigDecimal> outputQueue = new LinkedBlockingQueue<BigDecimal>();
-        inputQueue.add(BigDecimal.ONE)   ;
+        inputQueue.add(new BigDecimal(2))   ;
         IntcodeComputer computer = new IntcodeComputer(instructions.clone(),inputQueue, outputQueue);
         computer.run();
         try {
